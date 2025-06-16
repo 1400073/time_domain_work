@@ -1,0 +1,8 @@
+# core PyPI deps
+numpy>=1.24,<2.0
+scipy>=1.10.1
+jax>=0.4.13
+jaxlib>=0.4.13
+
+# your time-domain sim engine from a branch
+simphony @ git+https://github.com/BYUCamachoLab/simphony.git@block_mode
