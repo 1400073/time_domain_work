@@ -272,9 +272,9 @@ final_netlist["instances"]["split_sim"] = "split_sim"
 models["split_sim"] = split_sim
 final_netlist["instances"]["mmi_sim"] = "mmi_sim"
 models["mmi_sim"] = mmi_sim
-final_netlist["ports"]["o0"] = "mmi_sim,o0"
-final_netlist["ports"]["o1"] = "split_sim,o0"
-final_netlist["ports"]["o2"] = "split_sim,o1"
+final_netlist["ports"]["o2"] = "mmi_sim,o0"
+final_netlist["ports"]["o0"] = "split_sim,o0"
+final_netlist["ports"]["o1"] = "split_sim,o1"
 final_netlist["connections"]["mmi_sim,o1"] ="split_sim,o2"
 counter = 0
 for key,value in group_delay_ts.items():
@@ -330,11 +330,12 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
     'o11': jnp.zeros_like(t),
     'o12': jnp.zeros_like(t),
     }, carrier_freq=c/(w*1e-6), dt=dt)
+
     outputs = result.outputs
     
 
     # List of the ports you actually want:
-    port_list = [p for p in netlist['ports'] if p not in ('o0','o1','o2')]
+    port_list = [p for p in final_netlist['ports'] if p not in ('o0','o1','o2')]
 
     # Pre-allocate a (n_samples × n_ports) array of instantaneous powers
     P = np.zeros((n_samples, n_ports_out), dtype=np.complex64)
