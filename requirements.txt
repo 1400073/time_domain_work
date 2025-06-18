@@ -7,4 +7,5 @@ torch>=2.7.1
 scikit-learn>=1.7.0
 
 # your time-domain sim engine from a branch
-simphony @ git+https://github.com/BYUCamachoLab/simphony.git@block_mode
+git clone -b block_mode https://github.com/BYUCamachoLab/simphony.git
+

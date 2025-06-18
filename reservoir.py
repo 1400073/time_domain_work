@@ -132,42 +132,7 @@ splitter_netlist = {
     },
 }
 
-mmi_netlist = {
-    "instances":{
-        "mmi": "MultiModeInterferometer",
-        "wg1": "waveguide",
-
-    },
-    "connections":{
-        "mmi,o0":"wg1,o1",
-
-    },
-    "ports":{
-        
-        "o0":"wg1,o0",
-        "o1":"mmi,o1",
-        "o2":"mmi,o2",
-        "o3":"mmi,o3",
-        "o4":"mmi,o4",
-        "o5":"mmi,o5",
-        "o6":"mmi,o6",
-        "o7":"mmi,o7",
-        "o8":"mmi,o8",
-        "o9":"mmi,o9",
-        
-        "o10":"mmi,o10",
-        "o11":"mmi,o11",
-        "o12":"mmi,o12",
-        "o13":"mmi,o13",
-        "o14":"mmi,o14",
-        "o15":"mmi,o15",
-        "o16":"mmi,o16",
-        "o17":"mmi,o17",
-        "o18":"mmi,o18",
-        "o19":"mmi,o19",
-
-    },
-}
+combined_netlist["connections"]["final_sim0,o0"] = "final_sim_split,o10"
 
 
 T = 80e-11
@@ -189,28 +154,25 @@ options = {
     'wg10': {'length': 50.0},
     
 }
-num_delay = 8
+num_delay = 10
 group_delay = {}
 group_delay_ts = {}
 for i in range(3,11):
     group_delay[f"{i}"] = []
     group_delay_ts[f"{i}"] = []
 
-
-delay_base = 11
-prev = 2
 for k in range(3,11):
-    for i in range(0, num_delay//8*(k-2)):
+    for i in range(0, num_delay//5*(k-2)):
         netlist = {}
         netlist["instances"] = {}
         netlist["connections"] = {}
         netlist["ports"] = {}
-        for j in range(2, 10):
+        for j in range(2, 7):
             netlist["instances"][f"wg{j}"] = "waveguide"
         netlist["ports"]["o0"] = "wg2,o0"
-        netlist["ports"]["o1"] = "wg9,o1"
+        netlist["ports"]["o1"] = "wg6,o1"
 
-        for j in range(2, 9):
+        for j in range(2, 6):
             netlist["connections"][f"wg{j},o1"] = f"wg{j+1},o0"
         group_delay[f"{k}"].append(netlist)
  
@@ -245,6 +207,7 @@ final_netlist["ports"]["o0"] = "split_sim,o0"
 final_netlist["ports"]["o1"] = "split_sim,o1"
 final_netlist["connections"]["mmi_sim,o1"] ="split_sim,o2"
 counter = 0
+
 for key,value in group_delay_ts.items():
     keye = int(key)
     final_netlist["connections"][f"split_sim,o{keye}"] = f"time_sim{counter},o0"
@@ -258,6 +221,7 @@ for key,value in group_delay_ts.items():
     models[f"time_sim{counter}"] = value[-1]
     final_netlist["connections"][f"time_sim{counter},o1"] = f"mmi_sim,o{keye-1}"
     counter +=1
+
 for i in range(10,20):
     final_netlist["ports"][f"o{i-7}"] = f"mmi_sim,o{i}"
 
