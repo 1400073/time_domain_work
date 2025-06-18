@@ -55,10 +55,7 @@ dt_fine   = dt/ upsample # 0.005
 N_fine    = N_coarse * upsample  # 10 000
 
 t_fine = np.linspace(0.0, t_coarse[-1], N_fine) 
-# interp = interp1d(t_coarse, x, kind='linear')   # make a 1-D interpolator
-# x_f = interp(t_fine)                              # length 10 000
-# y_f = interp1d(t_coarse, y_)(t_fine)
-# z_f = interp1d(t_coarse, z_)(t_fine)
+
 cs = CubicSpline(t_coarse, x)
 x_f = cs(t_fine)                              # length 10 000
 y_f = CubicSpline(t_coarse, y_)(t_fine)
@@ -97,19 +94,6 @@ splitter_netlist = {
     },
     "connections":{
 
-        
-
-        # "mmi,o0":"wg1,o1",
-        # "mmi,o1":"wg2,o1",
-        # "mmi,o2":"wg3,o1",
-        # "mmi,o3":"wg4,o1",
-        # "mmi,o4":"wg5,o1",
-        # "mmi,o5":"wg6,o1",
-        # "mmi,o6":"wg7,o1",
-        # "mmi,o7":"wg8,o1",
-        # "mmi,o8":"wg9,o1",
-
-        
         "yinput,port_1":"yb1,port_1",
         "yb1,port_2":"yb2,port_1",
         "yb1,port_3":"yb3,port_1",
@@ -135,29 +119,15 @@ splitter_netlist = {
     "ports":{
         "o0":"yinput,port_2",
         "o1":"yinput,port_3",
-        "o2":"wg2,o0",
-        "o3":"wg3,o0",
-        "o4":"wg4,o0",
-        "o5":"wg5,o0",
-        "o6":"wg6,o0",
-        "o7":"wg7,o0",
-        "o8":"wg8,o0",
-        "o9":"wg9,o0",
-        "o10":"wg10,o0",
-        # "o2":"wg1,o0",
-
-
-        # "o3":"mmi,o10",
-        # "o4":"mmi,o11",
-        # "o5":"mmi,o12",
-        # "o6":"mmi,o13",
-        # "o7":"mmi,o14",
-        # "o8":"mmi,o15",
-        # "o9":"mmi,o16",
-        # "o10":"mmi,o17",
-        # "o11":"mmi,o18",
-        # "o12":"mmi,o19",
-
+        "o2":"wg2,o1",
+        "o3":"wg3,o1",
+        "o4":"wg4,o1",
+        "o5":"wg5,o1",
+        "o6":"wg6,o1",
+        "o7":"wg7,o1",
+        "o8":"wg8,o1",
+        "o9":"wg9,o1",
+        "o10":"wg10,o1",
 
     },
 }
@@ -170,8 +140,6 @@ mmi_netlist = {
     },
     "connections":{
         "mmi,o0":"wg1,o1",
-
-
 
     },
     "ports":{
@@ -246,7 +214,7 @@ for k in range(3,11):
             netlist["connections"][f"wg{j},o1"] = f"wg{j+1},o0"
         group_delay[f"{k}"].append(netlist)
  
-# MultiModeInterferometer = MMI(r=10, s=10)
+
 MultiModeInterferometer = ideal.make_mmi_model(r = 10, s = 10)
 
 models = {
@@ -294,13 +262,13 @@ for i in range(10,20):
     final_netlist["ports"][f"o{i-7}"] = f"mmi_sim,o{i}"
 
 wavelengths = [1.548, 1.549, 1.55,1.551,1.552]
-# wavelengths = [1.55]
+
 port_list       = [p for p in final_netlist["ports"]             # ['o2', 'o3', … 'o6']
                    if p not in ("o0", "o1","o2")]
 start_idx = 6000
 end_idx   = len(t) 
 n_samples = end_idx - start_idx
-c = 299792458.0  # speed of light in m/s                          
+c = 299792458.0                          
 n_ports_out     = len(port_list)                           # 5
 n_wvls          = len(wavelengths)  
 final_sim = TimeSim(netlist = final_netlist, models = models, settings= options)                       # 5
@@ -310,15 +278,9 @@ X = np.zeros((n_samples, n_ports_out * n_wvls), dtype=np.complex64)
 for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", total=len(wavelengths)):
    
     result = final_sim.run(t, {
-    # "o0": impulse,
     "o0":signal[:len(t)],
-    # "o0": jnp.zeros_like(t),
-    # 'o0': sig_padded,
     'o1': signal2[:len(t)],
-    # "o1": jnp.zeros_like(t),
-    # 'o1': jnp.zeros_like(t),
     'o2': smooth_rectangular_pulse(t, 0.0, T+ 20.0e-11)*jnp.sqrt(10),
-    # 'o2': jnp.zeros_like(t),
     'o3': jnp.zeros_like(t),
     'o4': jnp.zeros_like(t),
     'o5': jnp.zeros_like(t),
@@ -334,10 +296,8 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
     outputs = result.outputs
     
 
-    # List of the ports you actually want:
     port_list = [p for p in final_netlist['ports'] if p not in ('o0','o1','o2')]
 
-    # Pre-allocate a (n_samples × n_ports) array of instantaneous powers
     P = np.zeros((n_samples, n_ports_out), dtype=np.complex64)
 
     for j, p in enumerate(port_list):
@@ -349,14 +309,11 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
     X[:, start:start + n_ports_out] = P
 
 
-
-# Split into real and imaginary parts (float32 each):
 X_re = np.real(X)
 X_im = np.imag(X)
 
-# Save to a compressed .npz file:
 np.savez_compressed(
-    "X_mmi_binary_small.npz",
+    "X_mmi_binary_final.npz",
     X_re=X_re.astype(np.float32),
     X_im=X_im.astype(np.float32),
     labels=y[6075:80075].astype(np.float32),

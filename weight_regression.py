@@ -21,7 +21,7 @@ import torch.optim as optim
 import torch
 
 
-data = np.load("X_mmi_binary_small.npz")
+data = np.load("X_mmi_binary_final.npz")
 X_re    = data["X_re"]
 X_im    = data["X_im"]
 y = data["labels"]
