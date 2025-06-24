@@ -21,7 +21,7 @@ import contextlib
 T =80.0e-11
 dt = 1e-14                   # Time step/resolution
 t = jnp.arange(0, T, dt)
-num_delay = 10
+num_delay = 7
 wavelengths = [1.548, 1.549, 1.55,1.551,1.552]
 
 start_idx = 5000
@@ -347,7 +347,7 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
             "o0": signal[1000:len(t)+1000],
             # "o1": jnp.zeros_like(t),
             'o1': signal2[1000:len(t)+1000],
-            'o2': smooth_rectangular_pulse(t, 0.0, T+ 20.0e-11)*jnp.sqrt(10),
+            'o2': smooth_rectangular_pulse(t, 0.0, T+ 20.0e-11)*jnp.sqrt(20),
             # 'o2': jnp.zeros_like(t),
             'o3': jnp.zeros_like(t),
             'o4': jnp.zeros_like(t),
@@ -385,7 +385,7 @@ X_re = np.real(X)
 X_im = np.imag(X)
 
 np.savez_compressed(
-    "X_mmi_binary_10er.npz",
+    "X_mmi_binary_7.npz",
     X_re=X_re.astype(np.float32),
     X_im=X_im.astype(np.float32),
     labels=y[start_idx:].astype(np.float32),

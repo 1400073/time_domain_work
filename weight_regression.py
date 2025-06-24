@@ -56,17 +56,19 @@ y_test_torch = torch.tensor(y_test, dtype=torch.float32)
 class InterferometricRegressor(nn.Module):
     def __init__(self, in_dim):
         super().__init__()
-        # Learn one unconstrained complex weight per input channel for “pos” and “neg.”
-        self.wpos = nn.Parameter(torch.randn(in_dim, dtype=torch.cfloat))
-        self.wneg = nn.Parameter(torch.randn(in_dim, dtype=torch.cfloat))
-        self.bias  = nn.Parameter(torch.tensor(0.0))  # optional scaling factor
-        
+        # real log-amplitude + real phase for each channel
+        self.log_amp_pos   = nn.Parameter(torch.zeros(in_dim))
+        self.phase_pos     = nn.Parameter(torch.zeros(in_dim))
+        self.log_amp_neg   = nn.Parameter(torch.zeros(in_dim))
+        self.phase_neg     = nn.Parameter(torch.zeros(in_dim))
+        self.bias          = nn.Parameter(torch.tensor(0.0))
 
     def forward(self, xpos, xneg):
-        pos = torch.sum(self.wpos * xpos, dim=1) 
-        neg = torch.sum(self.wneg * xneg, dim=1)  
-        y_pred = pos.abs()**2 - neg.abs()**2      
-        return y_pred + self.bias
+        wpos = torch.exp(self.log_amp_pos) * torch.exp(1j*self.phase_pos)
+        wneg = torch.exp(self.log_amp_neg) * torch.exp(1j*self.phase_neg)
+        pos  = (wpos * xpos).sum(dim=1)
+        neg  = (wneg * xneg).sum(dim=1)
+        return pos.abs()**2 - neg.abs()**2 + self.bias
 
 
 model = InterferometricRegressor(in_dim=25)
@@ -94,8 +96,17 @@ class RMSELoss(nn.Module):
 
     def forward(self, y_pred, y_true):
         return torch.sqrt(self.mse(y_pred, y_true) + self.eps)
+    
+class PeakWeightedMSE(nn.Module):
+    def __init__(self, p=2.0):
+        super().__init__()
+        self.p = p
+    def forward(self, y_pred, y_true):
+        w = torch.abs(y_true)**self.p + 1e-3   # higher weight for large |y|
+        return torch.mean(w * (y_pred - y_true)**2)
 
-loss_fn = RMSELoss()
+loss_fn = PeakWeightedMSE(p=1.0)
+# loss_fn = RMSELoss()
 def r2_score(y_true, y_pred):
     ss_res = torch.sum((y_true - y_pred) ** 2)
     ss_tot = torch.sum((y_true - torch.mean(y_true)) ** 2)
@@ -123,15 +134,19 @@ for epoch in range(n_epochs):
 
 
 
+# with torch.no_grad():
+#     w_pos = model.wpos 
+#     w_neg = model.wneg
+#     bias = model.bias
+
+# print(w_pos.tolist())
+# print(w_neg.tolist())
+# print(bias.item())
 with torch.no_grad():
-    w_pos = model.wpos 
-    w_neg = model.wneg
+    wpos = torch.exp(model.log_amp_pos) * torch.exp(1j*model.phase_pos)
+    wneg = torch.exp(model.log_amp_neg) * torch.exp(1j*model.phase_neg)
     bias = model.bias
-with torch.no_grad():
-    y_p = model(xpos_train_torch, xpos_train_torch)
-plt.scatter(y_train, y_p.cpu(), s=2)
-plt.plot([-1,1],[-1,1],'--', color='k')
-plt.show()
-print(w_pos.tolist())
-print(w_neg.tolist())
+
+print(wpos.tolist())
+print(wneg.tolist())
 print(bias.item())
