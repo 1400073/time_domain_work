@@ -347,7 +347,7 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
             "o0": signal[1000:len(t)+1000],
             # "o1": jnp.zeros_like(t),
             'o1': signal2[1000:len(t)+1000],
-            'o2': smooth_rectangular_pulse(t, 0.0, T+ 20.0e-11)*jnp.sqrt(30),
+            'o2': smooth_rectangular_pulse(t, 0.0, T+ 20.0e-11)*jnp.sqrt(40),
             # 'o2': jnp.zeros_like(t),
             'o3': jnp.zeros_like(t),
             'o4': jnp.zeros_like(t),
