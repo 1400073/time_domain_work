@@ -4,7 +4,7 @@ import jax.numpy as jnp
 from jax import config
 config.update("jax_enable_x64", True)
 import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "simphony")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "simphony-block")))
 import simphony
 from simphony.time_domain import TimeSim
 from simphony.time_domain.utils import gaussian_pulse, smooth_rectangular_pulse 
@@ -18,10 +18,10 @@ from scipy.interpolate import CubicSpline
 from scipy.interpolate import interp1d
 import contextlib
 
-T =80.0e-11
+T = 80.0e-11
 dt = 1e-14                   # Time step/resolution
 t = jnp.arange(0, T, dt)
-num_delay = 7
+num_delay = 5
 wavelengths = [1.548, 1.549, 1.55,1.551,1.552]
 
 start_idx = 5000
@@ -347,7 +347,7 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
             "o0": signal[1000:len(t)+1000],
             # "o1": jnp.zeros_like(t),
             'o1': signal2[1000:len(t)+1000],
-            'o2': smooth_rectangular_pulse(t, 0.0, T+ 20.0e-11)*jnp.sqrt(20),
+            'o2': smooth_rectangular_pulse(t, 0.0, T+ 20.0e-11)*jnp.sqrt(30),
             # 'o2': jnp.zeros_like(t),
             'o3': jnp.zeros_like(t),
             'o4': jnp.zeros_like(t),
@@ -385,7 +385,7 @@ X_re = np.real(X)
 X_im = np.imag(X)
 
 np.savez_compressed(
-    "X_mmi_binary_7.npz",
+    "X_mmi_binary_5_bias_larger.npz",
     X_re=X_re.astype(np.float32),
     X_im=X_im.astype(np.float32),
     labels=y[start_idx:].astype(np.float32),

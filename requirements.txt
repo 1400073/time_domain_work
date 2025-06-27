@@ -6,6 +6,4 @@ jaxlib>=0.4.13
 torch>=2.7.1
 scikit-learn>=1.7.0
 
-# your time-domain sim engine from a branch
-git clone -b block_mode https://github.com/BYUCamachoLab/simphony.git
 
