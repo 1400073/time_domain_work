@@ -21,7 +21,7 @@ import torch.optim as optim
 import torch
 
 
-data = np.load("X_mmi_binary_5_bias_larger.npz")
+data = np.load("X_mmi_binary_5__few_delay_lines.npz")
 X_re    = data["X_re"]
 X_im    = data["X_im"]
 y = data["labels"]
@@ -29,16 +29,40 @@ y_data = np.asarray(y, dtype=float)
 X_data    = X_re + 1j * X_im  
 
 print(X_data.shape, y_data.shape)
-X_train, X_test, y_train, y_test = train_test_split(X_data, y_data[:X_data.shape[0]], test_size=0.2, shuffle = True)
+X_train, X_test, y_train, y_test = train_test_split(X_data, y_data[:X_data.shape[0]], test_size=0.4, shuffle = True)
 
+# def split_pos_neg(X_raw):
+#     xpos_list = []
+#     xneg_list = []
+#     for i in range(0, 45, 5):
+#         xpos_list.append(X_raw[:, i:i+5])  # pos: first 5 ports
+#         xneg_list.append(X_raw[:, i+5:i+9])  # neg: next 5 ports
+#     xpos = np.concatenate(xpos_list, axis=1)  # shape: (N, 25)
+#     xneg = np.concatenate(xneg_list, axis=1)  # shape: (N, 25)
+#     return xpos, xneg   
 def split_pos_neg(X_raw):
+    """
+    X_raw: np.ndarray of shape (N, 45)
+    We assume 5 blocks of 9 features each:
+      - first 5 per block are 'pos'
+      - next 4 per block are 'neg'
+    Returns:
+      xpos: (N, 5*5=25)
+      xneg: (N, 5*4=20)
+    """
+    n_feat = X_raw.shape[1]
+    block_len = 9               # 45 total ÷ 5 blocks
+    pos_len   = 5
+    neg_len   = block_len - pos_len  # =4
+
     xpos_list = []
     xneg_list = []
-    for i in range(0, 50, 10):
-        xpos_list.append(X_raw[:, i:i+5])  # pos: first 5 ports
-        xneg_list.append(X_raw[:, i+5:i+10])  # neg: next 5 ports
-    xpos = np.concatenate(xpos_list, axis=1)  # shape: (N, 25)
-    xneg = np.concatenate(xneg_list, axis=1)  # shape: (N, 25)
+    for i in range(0, n_feat, block_len):
+        xpos_list.append(X_raw[:, i : i + pos_len])        # 5 cols
+        xneg_list.append(X_raw[:, i + pos_len : i + block_len])  # 4 cols
+
+    xpos = np.concatenate(xpos_list, axis=1)   # (N, 25)
+    xneg = np.concatenate(xneg_list, axis=1)   # (N, 20)
     return xpos, xneg
 
 xpos_train, xneg_train = split_pos_neg(X_train)
@@ -54,33 +78,22 @@ y_test_torch = torch.tensor(y_test, dtype=torch.float32)
 
 
 class InterferometricRegressor(nn.Module):
-    def __init__(self, in_dim):
+    def __init__(self, n_pos, n_neg):
         super().__init__()
-        # real log-amplitude + real phase for each channel
-        # self.log_amp_pos   = nn.Parameter(torch.zeros(in_dim))
-        # self.phase_pos     = nn.Parameter(torch.zeros(in_dim))
-        # self.log_amp_neg   = nn.Parameter(torch.zeros(in_dim))
-        # self.phase_neg     = nn.Parameter(torch.zeros(in_dim))
-        # self.bias          = nn.Parameter(torch.tensor(0.0))
-        self.wpos = nn.Parameter(torch.randn(in_dim, dtype=torch.cfloat))
-        self.wneg = nn.Parameter(torch.randn(in_dim, dtype=torch.cfloat))
-        self.bias  = nn.Parameter(torch.tensor(0.0))  # optional scaling factor
-        
-
+        self.wpos = nn.Parameter(torch.randn(n_pos, dtype=torch.cfloat))
+        self.wneg = nn.Parameter(torch.randn(n_neg, dtype=torch.cfloat))
+        self.bias = nn.Parameter(torch.tensor(0.0))
 
     def forward(self, xpos, xneg):
-        # wpos = torch.exp(self.log_amp_pos) * torch.exp(1j*self.phase_pos)
-        # wneg = torch.exp(self.log_amp_neg) * torch.exp(1j*self.phase_neg)
-        # pos  = (wpos * xpos).sum(dim=1)
-        # neg  = (wneg * xneg).sum(dim=1)
-        # return pos.abs()**2 - neg.abs()**2 + self.bias
-        pos = torch.sum(self.wpos * xpos, dim=1) 
-        neg = torch.sum(self.wneg * xneg, dim=1)  
-        y_pred = pos.abs()**2 - neg.abs()**2      
-        return y_pred + self.bias
+        pos = torch.sum(self.wpos * xpos, dim=1)
+        neg = torch.sum(self.wneg * xneg, dim=1)
+        return pos.abs()**2 - neg.abs()**2 + self.bias
 
-
-model = InterferometricRegressor(in_dim=25)
+# instantiate with the right dims:
+model = InterferometricRegressor(
+    n_pos = xpos_train.shape[1],
+    n_neg = xneg_train.shape[1]
+)
 optimizer = torch.optim.LBFGS(
     model.parameters(),
     lr=1.0,            

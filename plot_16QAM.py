@@ -2,7 +2,7 @@ import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
 import jax.numpy as jnp
-from simphony.time_domain.utils import  gaussian_pulse, smooth_rectangular_pulse
+
 
 
 
