@@ -25,48 +25,48 @@ data = np.load("X_mmi_binary_5__few_delay_lines.npz")
 X_re    = data["X_re"]
 X_im    = data["X_im"]
 y = data["labels"]
-y_data = np.asarray(y, dtype=float)
+y_data = np.asarray(y, dtype=float) 
 X_data    = X_re + 1j * X_im  
 
 print(X_data.shape, y_data.shape)
 X_train, X_test, y_train, y_test = train_test_split(X_data, y_data[:X_data.shape[0]], test_size=0.4, shuffle = True)
 
-# def split_pos_neg(X_raw):
-#     xpos_list = []
-#     xneg_list = []
-#     for i in range(0, 45, 5):
-#         xpos_list.append(X_raw[:, i:i+5])  # pos: first 5 ports
-#         xneg_list.append(X_raw[:, i+5:i+9])  # neg: next 5 ports
-#     xpos = np.concatenate(xpos_list, axis=1)  # shape: (N, 25)
-#     xneg = np.concatenate(xneg_list, axis=1)  # shape: (N, 25)
-#     return xpos, xneg   
-def split_pos_neg(X_raw):
-    """
-    X_raw: np.ndarray of shape (N, 45)
-    We assume 5 blocks of 9 features each:
-      - first 5 per block are 'pos'
-      - next 4 per block are 'neg'
-    Returns:
-      xpos: (N, 5*5=25)
-      xneg: (N, 5*4=20)
-    """
-    n_feat = X_raw.shape[1]
-    block_len = 9               # 45 total ÷ 5 blocks
-    pos_len   = 5
-    neg_len   = block_len - pos_len  # =4
+def split_pos_neg(
+    X_raw: np.ndarray,
+    pos_len: int,
+    neg_len: int = None,
+    block_len: int = None
+) -> tuple[np.ndarray, np.ndarray]:
+    N, total_feats = X_raw.shape
 
-    xpos_list = []
-    xneg_list = []
-    for i in range(0, n_feat, block_len):
-        xpos_list.append(X_raw[:, i : i + pos_len])        # 5 cols
-        xneg_list.append(X_raw[:, i + pos_len : i + block_len])  # 4 cols
+    # Infer block_len and neg_len
+    if block_len is None:
+        if neg_len is None:
+            raise ValueError("You must specify either neg_len or block_len")
+        block_len = pos_len + neg_len
+    else:
+        if neg_len is None:
+            neg_len = block_len - pos_len
 
-    xpos = np.concatenate(xpos_list, axis=1)   # (N, 25)
-    xneg = np.concatenate(xneg_list, axis=1)   # (N, 20)
+    if total_feats % block_len != 0:
+        raise ValueError(
+            f"Total features ({total_feats}) is not divisible by block_len ({block_len})"
+        )
+    num_blocks = total_feats // block_len
+
+    xpos_blocks = []
+    xneg_blocks = []
+    for b in range(num_blocks):
+        start = b * block_len
+        xpos_blocks.append(X_raw[:, start : start + pos_len])
+        xneg_blocks.append(X_raw[:, start + pos_len : start + block_len])
+
+    xpos = np.concatenate(xpos_blocks, axis=1)
+    xneg = np.concatenate(xneg_blocks, axis=1)
     return xpos, xneg
 
-xpos_train, xneg_train = split_pos_neg(X_train)
-xpos_test, xneg_test = split_pos_neg(X_test)
+xpos_train, xneg_train = split_pos_neg(X_train, pos_len=5, neg_len=4)
+xpos_test, xneg_test = split_pos_neg(X_test, pos_len=5, neg_len=4)
 
 xpos_train_torch = torch.tensor(xpos_train, dtype=torch.cfloat)
 xneg_train_torch = torch.tensor(xneg_train, dtype=torch.cfloat)
@@ -120,11 +120,11 @@ class RMSELoss(nn.Module):
         return torch.sqrt(self.mse(y_pred, y_true) + self.eps)
 
 loss_fn = RMSELoss()
+
 def r2_score(y_true, y_pred):
     ss_res = torch.sum((y_true - y_pred) ** 2)
     ss_tot = torch.sum((y_true - torch.mean(y_true)) ** 2)
     return 1 - ss_res / ss_tot
-
 
 n_epochs = 500
 for epoch in range(n_epochs):

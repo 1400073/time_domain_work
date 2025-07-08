@@ -18,7 +18,7 @@ from scipy.interpolate import CubicSpline
 from scipy.interpolate import interp1d
 import contextlib
 
-T = 80.0e-11
+T = 20.0e-11    
 dt = 1e-14                   # Time step/resolution
 t = jnp.arange(0, T, dt)
 num_delay = 5
@@ -28,7 +28,7 @@ start_idx = 5000
 end_idx   = len(t) 
 n_samples = end_idx - start_idx
 c = 299792458.0                          
-n_ports_out     = 9                           
+n_ports_out     = 9                          
 n_wvls          = len(wavelengths)  
 
 # design matrix: rows = time samples, cols = (ports × wavelengths)
@@ -46,8 +46,8 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
         ]
 
     dtt        = 0.05
-    n_train   = 400
-    n_test    = 600
+    n_train   = 200
+    n_test    = 200
     n_warmup  = 100
     total     = n_warmup + n_train + n_test   # 1101
     t_eval    = np.linspace(0, dtt*total, total)
@@ -62,9 +62,9 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
         return 2*(u - u.min())/(u.max() - u.min()) - 1
 
     # coarse → fine upsampling
-    N_coarse = 1000
+    N_coarse = 400
     t_coarse = np.arange(N_coarse)*dtt
-    upsample = 100
+    upsample = 60
     dt_fine  = dtt/upsample
     t_fine   = np.linspace(0, t_coarse[-1], N_coarse*upsample)
 
