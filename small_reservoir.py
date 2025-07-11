@@ -18,7 +18,7 @@ from scipy.interpolate import CubicSpline
 from scipy.interpolate import interp1d
 import contextlib
 
-T = 20.0e-11    
+T = 30.0e-11    
 dt = 1e-14                   # Time step/resolution
 t = jnp.arange(0, T, dt)
 num_delay = 5
@@ -64,7 +64,7 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
     # coarse → fine upsampling
     N_coarse = 400
     t_coarse = np.arange(N_coarse)*dtt
-    upsample = 60
+    upsample = 80
     dt_fine  = dtt/upsample
     t_fine   = np.linspace(0, t_coarse[-1], N_coarse*upsample)
 
@@ -354,7 +354,7 @@ for wl_idx, w in tqdm(enumerate(wavelengths), desc="Processing wavelengths", tot
             "o0": signal[1000:len(t)+1000],
             # "o1": jnp.zeros_like(t),
             'o1': signal2[1000:len(t)+1000],
-            'o2': smooth_rectangular_pulse(t, 1.0e-13, T+ 20.0e-11)*jnp.sqrt(30),
+            'o2': smooth_rectangular_pulse(t, 1.0e-13, T+ 20.0e-11)*jnp.sqrt(60),
             # 'o2': jnp.zeros_like(t),
             'o3': jnp.zeros_like(t),
             'o4': jnp.zeros_like(t),
