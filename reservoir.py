@@ -4,8 +4,8 @@ import jax.numpy as jnp
 from jax import config
 config.update("jax_enable_x64", True)
 import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "simphony-block")))
-import simphony
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "simphony")))
+
 from simphony.time_domain import TimeSim
 from simphony.time_domain.utils import gaussian_pulse, smooth_rectangular_pulse 
 from simphony.libraries import siepic, ideal
